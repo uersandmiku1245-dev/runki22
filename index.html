@@ -1,0 +1,249 @@
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Thế Nguyên Love | Rubik Timer</title>
+<style>
+*{box-sizing:border-box}
+body{
+ margin:0;min-height:100vh;color:white;
+ font-family:Arial,sans-serif;
+ background:
+ linear-gradient(120deg,#07111fcc,#111827aa),
+ url("https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=1920")
+ center/cover fixed;
+ display:flex;justify-content:center;align-items:center;
+ padding:20px
+}
+.main{
+ width:100%;max-width:950px;
+ background:#0c1424dd;
+ border:1px solid #ffffff25;
+ border-radius:25px;padding:30px;
+ text-align:center;backdrop-filter:blur(15px);
+ box-shadow:0 20px 70px #0008
+}
+h1{
+ color:#ff9bd5;font-size:35px;
+ text-shadow:0 0 20px #ff3ca6
+}
+.sub{color:#94a3b8;margin-bottom:25px}
+.scramble{
+ background:#ffffff12;padding:20px;
+ border-radius:15px;color:#67e8f9;
+ font-size:20px;line-height:1.7;
+ margin:20px 0
+}
+.timer{
+ font-size:clamp(65px,13vw,115px);
+ font-weight:bold;font-family:monospace;
+ color:white;text-shadow:0 0 25px #38bdf8;
+ margin:25px 0
+}
+.timer.ready{color:#4ade80;text-shadow:0 0 25px #4ade80}
+.hint{color:#facc15;margin-bottom:25px}
+button{
+ border:0;border-radius:12px;padding:14px 22px;
+ color:white;font-size:15px;font-weight:bold;
+ cursor:pointer;margin:5px;transition:.2s
+}
+button:hover{transform:scale(1.06)}
+.pink{background:linear-gradient(45deg,#ec4899,#9333ea)}
+.blue{background:linear-gradient(45deg,#0284c7,#2563eb)}
+.gray{background:#475569}
+.stats{
+ display:grid;grid-template-columns:repeat(3,1fr);
+ gap:12px;margin:25px 0
+}
+.stat{
+ background:#ffffff12;padding:20px;border-radius:15px
+}
+.stat small{color:#94a3b8}
+.stat p{font-size:25px;color:#f9a8d4;margin:10px 0 0}
+.history{
+ text-align:left;background:#ffffff0c;
+ padding:15px;border-radius:15px
+}
+.history h2{text-align:center;color:#f9a8d4}
+#list{list-style:none;padding:0;max-height:180px;overflow:auto}
+#list li{
+ padding:12px;border-bottom:1px solid #ffffff18;
+ display:flex;justify-content:space-between
+}
+footer{margin-top:25px;color:#f9a8d4}
+@media(max-width:550px){
+ .main{padding:17px}
+ h1{font-size:26px}
+ .stats{gap:5px}
+ .stat{padding:12px 5px}
+ .stat p{font-size:19px}
+}
+</style>
+</head>
+<body>
+<div class="main">
+ <h1>💗 THẾ NGUYÊN LOVE 💗</h1>
+ <div class="sub">ULTIMATE RUBIK SPEED TIMER 3×3</div>
+
+ <div class="scramble">
+  <b>🔀 CÔNG THỨC XÁO RUBIK</b>
+  <div id="scramble">Đang tải...</div>
+  <button class="pink" onclick="shuffle()">XÁO MỚI ↻</button>
+ </div>
+
+ <div class="timer" id="timer">0.000</div>
+ <div class="hint" id="hint">
+  GIỮ SPACE 0.5 GIÂY ĐỂ CHUẨN BỊ
+ </div>
+
+ <div>
+  <button class="blue" onclick="reset()">↻ RESET</button>
+  <button class="gray" onclick="clearAll()">🗑 XÓA LỊCH SỬ</button>
+ </div>
+
+ <div class="stats">
+  <div class="stat"><small>SỐ LẦN GIẢI</small><p id="count">0</p></div>
+  <div class="stat"><small>BEST TIME</small><p id="best">--</p></div>
+  <div class="stat"><small>AVERAGE</small><p id="avg">--</p></div>
+ </div>
+
+ <div class="history">
+  <h2>🏆 LỊCH SỬ CỦA BẠN</h2>
+  <ul id="list"></ul>
+ </div>
+
+ <footer>✨ Made with love by Thế Nguyên ✨</footer>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+let running=false,holding=false,ready=false;
+let start=0,interval=null,hold=null;
+let times=[];
+
+function shuffle(){
+ const moves=["R","L","U","D","F","B"];
+ const suffix=["","'","2"];
+ let result=[],last="";
+ for(let i=0;i<20;i++){
+  let m;
+  do{m=moves[Math.floor(Math.random()*6)]}
+  while(m===last);
+  last=m;
+  result.push(m+suffix[Math.floor(Math.random()*3)]);
+ }
+ $("scramble").textContent=result.join("   ");
+}
+
+function format(ms){return (ms/1000).toFixed(3)}
+
+function startTimer(){
+ running=true;
+ start=performance.now();
+ $("hint").textContent="🔥 ĐANG GIẢI RUBIK!";
+ $("timer").classList.remove("ready");
+ interval=setInterval(()=>{
+  $("timer").textContent=format(performance.now()-start);
+ },5);
+}
+
+function stopTimer(){
+ if(!running)return;
+ let result=performance.now()-start;
+ clearInterval(interval);
+ running=false;
+ $("timer").textContent=format(result);
+ $("hint").textContent="ĐÃ DỪNG! GIỮ SPACE ĐỂ GIẢI TIẾP";
+ times.unshift(result);
+ render();
+ shuffle();
+}
+
+document.addEventListener("keydown",e=>{
+ if(e.code!=="Space"||e.repeat)return;
+ e.preventDefault();
+
+ if(running){
+  stopTimer();
+  return;
+ }
+ if(holding||ready)return;
+
+ holding=true;
+ $("timer").classList.add("ready");
+ $("hint").textContent="ĐANG CHUẨN BỊ...";
+
+ hold=setTimeout(()=>{
+  if(holding){
+   ready=true;
+   $("hint").textContent="THẢ SPACE ĐỂ BẮT ĐẦU!";
+  }
+ },500);
+});
+
+document.addEventListener("keyup",e=>{
+ if(e.code!=="Space")return;
+ e.preventDefault();
+ if(!holding)return;
+
+ clearTimeout(hold);
+ holding=false;
+
+ if(ready){
+  ready=false;
+  startTimer();
+ }else{
+  $("timer").classList.remove("ready");
+  $("hint").textContent="GIỮ SPACE 0.5 GIÂY ĐỂ CHUẨN BỊ";
+ }
+});
+
+window.addEventListener("blur",()=>{
+ clearTimeout(hold);
+ holding=false;
+ ready=false;
+ $("timer").classList.remove("ready");
+});
+
+function reset(){
+ clearInterval(interval);
+ clearTimeout(hold);
+ running=false;
+ holding=false;
+ ready=false;
+ $("timer").textContent="0.000";
+ $("timer").classList.remove("ready");
+ $("hint").textContent="GIỮ SPACE 0.5 GIÂY ĐỂ CHUẨN BỊ";
+}
+
+function render(){
+ $("count").textContent=times.length;
+ $("best").textContent=times.length?format(Math.min(...times)):"--";
+ $("avg").textContent=times.length?
+ format(times.reduce((a,b)=>a+b,0)/times.length):"--";
+
+ $("list").innerHTML="";
+ times.forEach((t,i)=>{
+  let li=document.createElement("li");
+  let name=document.createElement("span");
+  let value=document.createElement("b");
+  name.textContent="Lần "+(i+1);
+  value.textContent=format(t)+" s";
+  li.append(name,value);
+  $("list").append(li);
+ });
+}
+
+function clearAll(){
+ if(confirm("Bạn có muốn xóa lịch sử?")){
+  times=[];
+  render();
+ }
+}
+shuffle();
+render();
+</script>
+</body>
+</html>
